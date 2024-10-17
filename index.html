@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Gamedev Canvas Workshop</title>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      canvas {
+        background: #eee;
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="myCanvas" width="480" height="320"></canvas>
+
+    <script>
+      // JavaScript code goes here
+      var canvas = document.getElementById('myCanvas');
+      var ctx = canvas.getContext('2d');
+
+      let x = canvas.width / 2;
+      let y = canvas.height - 30;
+      let speed = 2;
+      let dx = speed;
+      let dy = speed;
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, Math.PI * 2);
+        ctx.fillStyle = 'blue';
+        ctx.fill();
+        ctx.closePath();
+        x += dx;
+        y += dy;
+        if (x + 10 > canvas.width || x - 10 < 0) {
+          // 圓形碰到左邊或右邊
+          dx = -dx; // 反轉 x 軸速度
+        }
+
+        if (y + 10 > canvas.height || y - 10 < 0) {
+          // 圓形碰到上邊或下邊
+          dy = -dy; // 反轉 y 軸速度
+        }
+      }
+      setInterval(draw, 10);
+    </script>
+  </body>
+</html>
