@@ -1,53 +1,168 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
   <head>
+    <title>Title</title>
+    <!-- Required meta tags -->
     <meta charset="utf-8" />
-    <title>Gamedev Canvas Workshop</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+
+    <!-- Bootstrap CSS v5.2.1 -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+  </head>
+
+  <body>
     <style>
       * {
         padding: 0;
         margin: 0;
+      }
+      body{
+        background-color: #f8f9fa;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
       }
       canvas {
         background: #eee;
         display: block;
         margin: 0 auto;
       }
+      .btnStart{
+        margin: 0 auto;
+      }
     </style>
   </head>
   <body>
     <canvas id="myCanvas" width="800" height="600"></canvas>
-
+    <button class="btnStart btn btn-primary">StartGame</button>
     <script>
       // JavaScript code goes here
-      var canvas = document.getElementById('myCanvas');
-      var ctx = canvas.getContext('2d');
+      var canvas = document.getElementById("myCanvas");
+      var ctx = canvas.getContext("2d");
+      const btnStart = document.querySelector(".btnStart");
 
+      const paddleHeight = 10;
+      const paddleWidth = 75;
       let x = canvas.width / 2;
       let y = canvas.height - 30;
       let speed = 2;
       let dx = speed;
       let dy = speed;
+      let ballRadius = 10;
+      let ballColor = "#111111";
+      let paddleX = (canvas.width - paddleWidth) / 2;
+      let rightPressed = false;
+      let leftPressed = false;
+      let interval = 0;
+
+      btnStart.addEventListener("click", (e) => {
+        interval = setInterval(draw, 10);
+        e.currentTarget.classList.add("opacity-0");
+      });
+
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.beginPath();
-        ctx.arc(x, y, 10, 0, Math.PI * 2);
-        ctx.fillStyle = 'blue';
-        ctx.fill();
-        ctx.closePath();
+        drawBall();
+        drawPaddle();
+
         x += dx;
         y += dy;
-        if (x + 10 > canvas.width || x - 10 < 0) {
+        if (x + ballRadius > canvas.width || x - ballRadius < 0) {
           // 圓形碰到左邊或右邊
+          ballColor = randomColor();
+
           dx = -dx; // 反轉 x 軸速度
         }
 
-        if (y + 10 > canvas.height || y - 10 < 0) {
+        if (y - ballRadius < 0) {
           // 圓形碰到上邊或下邊
+          ballColor = randomColor();
           dy = -dy; // 反轉 y 軸速度
+        } else if (y + ballRadius + paddleHeight > canvas.height) {
+          if (x > paddleX && x < paddleX + paddleWidth) {
+            dy = -dy;
+          } else if (y + ballRadius > canvas.height) {
+            alert("GAME OVER");
+            document.location.reload();
+            clearInterval(interval);
+          }
+        }
+
+        if (rightPressed) {
+          paddleX = Math.min(paddleX + 7, canvas.width - paddleWidth);
+        } else if (leftPressed) {
+          paddleX = Math.max(paddleX - 7, 0);
         }
       }
-      setInterval(draw, 10);
+
+      function drawBall() {
+        ctx.beginPath();
+        ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+        ctx.fillStyle = ballColor;
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      function randomColor() {
+        let letters = "0123456789ABCDEF";
+        let color = "#";
+        for (let i = 0; i < 6; i++) {
+          color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+      }
+
+      function drawPaddle() {
+        ctx.beginPath();
+        ctx.rect(
+          paddleX,
+          canvas.height - paddleHeight,
+          paddleWidth,
+          paddleHeight
+        );
+        ctx.fillStyle = "#0095DD";
+        ctx.fill();
+        ctx.closePath();
+      }
+
+      document.addEventListener("keydown", keyboardDownHandler, false);
+      document.addEventListener("keyup", keyboardUpHandler, false);
+      function keyboardDownHandler(e) {
+        if (e.key === "ArrowRight" || e.key === "Right") {
+          rightPressed = true;
+        } else if (e.key === "ArrowLeft" || e.key === "Left") {
+          leftPressed = true;
+        }
+      }
+
+      function keyboardUpHandler(e) {
+        if (e.key === "ArrowRight" || e.key === "Right") {
+          rightPressed = false;
+        } else if (e.key === "ArrowLeft" || e.key === "Left") {
+          leftPressed = false;
+        }
+      }
     </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+      integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+      crossorigin="anonymous"
+    ></script>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"
+      integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+"
+      crossorigin="anonymous"
+    ></script>
   </body>
 </html>
+
