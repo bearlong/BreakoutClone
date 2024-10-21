@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <title>Title</title>
@@ -16,15 +16,13 @@
       integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
       crossorigin="anonymous"
     />
-  </head>
 
-  <body>
     <style>
       * {
         padding: 0;
         margin: 0;
       }
-      body{
+      body {
         background-color: #f8f9fa;
         display: flex;
         justify-content: center;
@@ -36,7 +34,7 @@
         display: block;
         margin: 0 auto;
       }
-      .btnStart{
+      .btnStart {
         margin: 0 auto;
       }
     </style>
@@ -54,7 +52,7 @@
       const paddleWidth = 75;
       let x = canvas.width / 2;
       let y = canvas.height - 30;
-      let speed = 2;
+      let speed = 5;
       let dx = speed;
       let dy = speed;
       let ballRadius = 10;
@@ -63,6 +61,24 @@
       let rightPressed = false;
       let leftPressed = false;
       let interval = 0;
+      //  磚塊數值
+      const brickWidth = 75;
+      const brickHeight = 20;
+      const brickPadding = 10;
+      const brickOffsetTop = 30;
+      const brickOffsetLeft = 30;
+      const brickColumnCount =
+        Math.floor(800 / (brickWidth + brickPadding * 2)) + 1;
+      const brickRowCount =
+        Math.floor(400 / 2 / (brickHeight + brickPadding * 2)) + 1;
+
+      let bricks = [];
+      for (let c = 0; c < brickColumnCount; c++) {
+        bricks[c] = [];
+        for (let r = 0; r < brickRowCount; r++) {
+          bricks[c][r] = { x: 0, y: 0, status: 1 };
+        }
+      }
 
       btnStart.addEventListener("click", (e) => {
         interval = setInterval(draw, 10);
@@ -71,11 +87,11 @@
 
       function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBricks();
         drawBall();
         drawPaddle();
+        collisionDetection();
 
-        x += dx;
-        y += dy;
         if (x + ballRadius > canvas.width || x - ballRadius < 0) {
           // 圓形碰到左邊或右邊
           ballColor = randomColor();
@@ -102,6 +118,9 @@
         } else if (leftPressed) {
           paddleX = Math.max(paddleX - 7, 0);
         }
+
+        x += dx;
+        y += dy;
       }
 
       function drawBall() {
@@ -151,6 +170,44 @@
           leftPressed = false;
         }
       }
+
+      function drawBricks() {
+        for (let c = 0; c < brickColumnCount; c++) {
+          for (let r = 0; r < brickRowCount; r++) {
+            if (bricks[c][r].status === 1) {
+              const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
+              const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+              bricks[c][r].x = brickX;
+              bricks[c][r].y = brickY;
+              ctx.beginPath();
+              ctx.rect(brickX, brickY, brickWidth, brickHeight);
+              ctx.fillStyle = "#0095DD";
+              ctx.fill();
+              ctx.closePath();
+            }
+          }
+        }
+      }
+      // 碰撞偵測
+      function collisionDetection() {
+        for (let c = 0; c < brickColumnCount; c++) {
+          for (let r = 0; r < brickRowCount; r++) {
+            const b = bricks[c][r];
+            if (b.status === 1) {
+              if (
+                x > b.x &&
+                x < b.x + brickWidth &&
+                y > b.y &&
+                y < b.y + brickHeight
+              ) {
+                console.log("click");
+                dy = -dy;
+                b.status = 0;
+              }
+            }
+          }
+        }
+      }
     </script>
     <script
       src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
@@ -165,4 +222,3 @@
     ></script>
   </body>
 </html>
-
