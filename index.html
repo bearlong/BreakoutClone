@@ -22,13 +22,12 @@
         padding: 0;
         margin: 0;
       }
-      body {
+      .game {
         background-color: #f8f9fa;
-        display: flex;
-        justify-content: center;
-        align-items: center;
         height: 100vh;
+        position: relative;
       }
+
       canvas {
         background: #eee;
         display: block;
@@ -37,40 +36,89 @@
       .btnStart {
         margin: 0 auto;
       }
+
+      .score {
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+        position: absolute;
+        top: 3rem;
+        left: calc(50% - 390px);
+      }
     </style>
   </head>
   <body>
-    <canvas id="myCanvas" width="800" height="600"></canvas>
-    <button class="btnStart btn btn-primary">StartGame</button>
+    <main class="game pt-5">
+      <canvas id="myCanvas" width="800" height="600" class=""></canvas>
+      <div
+        class="control d-flex pt-3 justify-content-center align-items-center"
+      >
+        <button class="btnStart btn btn-primary">StartGame</button>
+      </div>
+    </main>
     <script>
       // JavaScript code goes here
       var canvas = document.getElementById("myCanvas");
       var ctx = canvas.getContext("2d");
-      const btnStart = document.querySelector(".btnStart");
+      let animationId;
 
-      const paddleHeight = 10;
-      const paddleWidth = 75;
+      // 常量參數
+      const SPEED = 5;
+      const BRICK_COLOR = "#0095DD";
+      const PADDLE_WIDTH = 75;
+      const PADDLE_HEIGHT = 10;
+      const BALL_RADIUS = 10;
+      const MAX_ANGLE = Math.PI / 3; // 最大反射角 (60 度)
+
+      //遊戲參數
+      const gameConfig = {
+        // 球數值
+        ball: {
+          speed: 5,
+          radius: 10,
+        },
+        //  BAR數值
+        paddle: {
+          width: 75,
+          height: 10,
+          color: "#0095DD",
+        },
+        //  磚塊數值
+        brick: {
+          width: 75,
+          height: 20,
+          color: "#0095DD",
+          padding: 10,
+          offsetTop: 30,
+          offsetLeft: 30,
+        },
+      };
+
+      const btnStart = document.querySelector(".btnStart");
       let x = canvas.width / 2;
       let y = canvas.height - 30;
-      let speed = 5;
-      let dx = speed;
-      let dy = speed;
-      let ballRadius = 10;
+      let dx = gameConfig.ball.speed;
+      let dy = gameConfig.ball.speed;
       let ballColor = "#111111";
-      let paddleX = (canvas.width - paddleWidth) / 2;
+      let paddleX = (canvas.width - gameConfig.paddle.width) / 2;
+      // 板子中心點
+      const paddleCenter = paddleX + gameConfig.paddle.width / 2;
       let rightPressed = false;
       let leftPressed = false;
       let interval = 0;
-      //  磚塊數值
-      const brickWidth = 75;
-      const brickHeight = 20;
-      const brickPadding = 10;
-      const brickOffsetTop = 30;
-      const brickOffsetLeft = 30;
+
+      // 分數
+      let score = 0;
+      const scoreCount = document.querySelector(".scoreCount");
+      // 磚塊初始化
       const brickColumnCount =
-        Math.floor(800 / (brickWidth + brickPadding * 2)) + 1;
+        Math.floor(
+          800 / (gameConfig.brick.width + gameConfig.brick.padding * 2)
+        ) + 1;
       const brickRowCount =
-        Math.floor(400 / 2 / (brickHeight + brickPadding * 2)) + 1;
+        Math.floor(
+          400 / 2 / (gameConfig.brick.height + gameConfig.brick.padding * 2)
+        ) + 1;
 
       let bricks = [];
       for (let c = 0; c < brickColumnCount; c++) {
@@ -81,7 +129,7 @@
       }
 
       btnStart.addEventListener("click", (e) => {
-        interval = setInterval(draw, 10);
+        animationId = requestAnimationFrame(draw);
         e.currentTarget.classList.add("opacity-0");
       });
 
@@ -91,41 +139,54 @@
         drawBall();
         drawPaddle();
         collisionDetection();
+        drawScore();
 
-        if (x + ballRadius > canvas.width || x - ballRadius < 0) {
+        if (x + BALL_RADIUS > canvas.width || x - BALL_RADIUS < 0) {
           // 圓形碰到左邊或右邊
           ballColor = randomColor();
 
           dx = -dx; // 反轉 x 軸速度
         }
 
-        if (y - ballRadius < 0) {
+        if (y - BALL_RADIUS < 0) {
           // 圓形碰到上邊或下邊
           ballColor = randomColor();
           dy = -dy; // 反轉 y 軸速度
-        } else if (y + ballRadius + paddleHeight > canvas.height) {
-          if (x > paddleX && x < paddleX + paddleWidth) {
-            dy = -dy;
-          } else if (y + ballRadius > canvas.height) {
+        } else if (y + BALL_RADIUS + gameConfig.paddle.height > canvas.height) {
+          if (x > paddleX && x < paddleX + gameConfig.paddle.width) {
+            const offset = (x - paddleCenter) / (gameConfig.paddle.width / 2);
+            const angle = offset * MAX_ANGLE; // 偏移量轉成角度
+
+            // 根據反射角更新 dx 和 dy
+            dx = gameConfig.ball.speed * Math.sin(angle);
+            console.log(offset);
+
+            dy = -Math.abs(gameConfig.ball.speed * Math.cos(angle));
+          } else if (y + gameConfig.ball.radius > canvas.height) {
             alert("GAME OVER");
             document.location.reload();
-            clearInterval(interval);
+            // clearInterval(interval);
+            cancelAnimationFrame(animationId);
           }
         }
 
         if (rightPressed) {
-          paddleX = Math.min(paddleX + 7, canvas.width - paddleWidth);
+          paddleX = Math.min(
+            paddleX + 7,
+            canvas.width - gameConfig.paddle.width
+          );
         } else if (leftPressed) {
           paddleX = Math.max(paddleX - 7, 0);
         }
 
         x += dx;
         y += dy;
+        animationId = requestAnimationFrame(draw);
       }
 
       function drawBall() {
         ctx.beginPath();
-        ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+        ctx.arc(x, y, gameConfig.ball.radius, 0, Math.PI * 2);
         ctx.fillStyle = ballColor;
         ctx.fill();
         ctx.closePath();
@@ -144,15 +205,23 @@
         ctx.beginPath();
         ctx.rect(
           paddleX,
-          canvas.height - paddleHeight,
-          paddleWidth,
-          paddleHeight
+          canvas.height - gameConfig.paddle.height,
+          gameConfig.paddle.width,
+          gameConfig.paddle.height
         );
-        ctx.fillStyle = "#0095DD";
+        ctx.fillStyle = gameConfig.brick.color;
         ctx.fill();
         ctx.closePath();
       }
 
+      // 呈現分數
+      function drawScore() {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = gameConfig.brick.color;
+        ctx.fillText("Score: " + score, 8, 20);
+      }
+
+      // 鍵盤移動
       document.addEventListener("keydown", keyboardDownHandler, false);
       document.addEventListener("keyup", keyboardUpHandler, false);
       function keyboardDownHandler(e) {
@@ -171,17 +240,36 @@
         }
       }
 
+      // 滑鼠移動
+
+      document.addEventListener("mousemove", mouseMoveHandler, false);
+      function mouseMoveHandler(e) {
+        const relativeX = e.clientX - canvas.offsetLeft;
+        if (relativeX > 0 && relativeX < canvas.width) {
+          paddleX = relativeX - gameConfig.paddle.width / 2;
+        }
+      }
+
       function drawBricks() {
         for (let c = 0; c < brickColumnCount; c++) {
           for (let r = 0; r < brickRowCount; r++) {
             if (bricks[c][r].status === 1) {
-              const brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-              const brickY = r * (brickHeight + brickPadding) + brickOffsetTop;
+              const brickX =
+                c * (gameConfig.brick.width + gameConfig.brick.padding) +
+                gameConfig.brick.offsetLeft;
+              const brickY =
+                r * (gameConfig.brick.height + gameConfig.brick.padding) +
+                gameConfig.brick.offsetTop;
               bricks[c][r].x = brickX;
               bricks[c][r].y = brickY;
               ctx.beginPath();
-              ctx.rect(brickX, brickY, brickWidth, brickHeight);
-              ctx.fillStyle = "#0095DD";
+              ctx.rect(
+                brickX,
+                brickY,
+                gameConfig.brick.width,
+                gameConfig.brick.height
+              );
+              ctx.fillStyle = gameConfig.brick.color;
               ctx.fill();
               ctx.closePath();
             }
@@ -196,13 +284,19 @@
             if (b.status === 1) {
               if (
                 x > b.x &&
-                x < b.x + brickWidth &&
+                x < b.x + gameConfig.brick.width &&
                 y > b.y &&
-                y < b.y + brickHeight
+                y < b.y + gameConfig.brick.height
               ) {
                 console.log("click");
                 dy = -dy;
                 b.status = 0;
+                score++;
+                if (score === brickColumnCount * brickRowCount) {
+                  alert("YOU WIN!");
+                  document.location.reload();
+                  clearInterval(interval);
+                }
               }
             }
           }
