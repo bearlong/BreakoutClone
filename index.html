@@ -69,6 +69,12 @@
       const PADDLE_HEIGHT = 10;
       const BALL_RADIUS = 10;
       const MAX_ANGLE = Math.PI / 3; // 最大反射角 (60 度)
+      //音效
+      let soundObj = {
+        wallHit: "./sounds/wallHit.mp3",
+        bricksHit: "./sounds/bricksHit.mp3",
+        levelUp: "./sounds/levelUp.mp3",
+      };
 
       //遊戲參數
       const gameConfig = {
@@ -109,6 +115,7 @@
 
       // 分數
       let score = 0;
+      let levelScore = 0;
       const scoreCount = document.querySelector(".scoreCount");
       // 磚塊初始化
       const brickColumnCount =
@@ -133,7 +140,10 @@
         e.currentTarget.classList.add("opacity-0");
       });
 
+      let isPaused = false;
+
       function draw() {
+        if (isPaused) return;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawBricks();
         drawBall();
@@ -142,9 +152,9 @@
         drawScore();
 
         if (x + BALL_RADIUS > canvas.width || x - BALL_RADIUS < 0) {
+          playSound("wallHit");
           // 圓形碰到左邊或右邊
           ballColor = randomColor();
-
           dx = -dx; // 反轉 x 軸速度
         }
 
@@ -164,9 +174,10 @@
             dy = -Math.abs(gameConfig.ball.speed * Math.cos(angle));
           } else if (y + gameConfig.ball.radius > canvas.height) {
             alert("GAME OVER");
+            cancelAnimationFrame(animationId);
+            isPaused = true;
             document.location.reload();
             // clearInterval(interval);
-            cancelAnimationFrame(animationId);
           }
         }
 
@@ -288,19 +299,55 @@
                 y > b.y &&
                 y < b.y + gameConfig.brick.height
               ) {
-                console.log("click");
+                playSound("bricksHit");
                 dy = -dy;
                 b.status = 0;
                 score++;
-                if (score === brickColumnCount * brickRowCount) {
-                  alert("YOU WIN!");
-                  document.location.reload();
-                  clearInterval(interval);
+                levelScore++;
+                if (levelScore === brickColumnCount * brickRowCount) {
+                  cancelAnimationFrame(animationId);
+                  isPaused = true;
+                  levelUp();
+                  playSound("levelUp");
+                  levelScore = 0; // 重設關卡分數
+
+                  setTimeout(() => {
+                    resetBricks();
+                    x = canvas.width / 2;
+                    y = canvas.height - 30;
+                    isPaused = false;
+                    animationId = requestAnimationFrame(draw); // 重新開始動畫
+                  }, 5000);
                 }
               }
             }
           }
         }
+      }
+      // 重設磚塊
+      function resetBricks() {
+        for (let c = 0; c < brickColumnCount; c++) {
+          bricks[c] = [];
+          for (let r = 0; r < brickRowCount; r++) {
+            bricks[c][r] = { x: 0, y: 0, status: 1 };
+          }
+        }
+      }
+
+      // 音效處理
+      function playSound(key) {
+        let sound = new Audio(soundObj[key]);
+        sound.addEventListener("ended", (e) => {
+          e.target = null;
+        });
+        sound.play();
+      }
+
+      function levelUp() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = "36px Arial";
+        ctx.fillStyle = "#F00";
+        ctx.fillText("Level Up", 150, 200);
       }
     </script>
     <script
