@@ -135,6 +135,43 @@
         }
       }
 
+      // BUFF配率表
+      const dropTable = [
+        { name: "球+2", chance: 0.05, color: "red", effect: addBalls },
+        { name: "縮小", chance: 0.1, color: "blue", effect: shrinkBalls },
+        { name: "Bar加長", chance: 0.1, color: "green", effect: extendPaddle },
+      ];
+
+      let buffBalls = [];
+
+      function getRandomDrop() {
+        let rand = Math.random(); // 隨機生成一個0到1之間的數
+        let cumulativeChance = 0;
+
+        for (let item of dropTable) {
+          cumulativeChance += item.chance;
+          if (rand <= cumulativeChance) {
+            return item; // 返回掉落的物品名稱
+          }
+        }
+        return null; // 如果沒有命中，返回null表示不掉落
+      }
+
+      function addBalls() {
+        // 邏輯：在遊戲中增加2顆球
+        console.log("+2");
+      }
+
+      function shrinkBalls() {
+        // 邏輯：縮小球拍的寬度
+        console.log("縮小");
+      }
+
+      function extendPaddle() {
+        // 邏輯：加長球拍的寬度
+        console.log("加長");
+      }
+
       btnStart.addEventListener("click", (e) => {
         animationId = requestAnimationFrame(draw);
         e.currentTarget.classList.add("opacity-0");
@@ -150,6 +187,7 @@
         drawPaddle();
         collisionDetection();
         drawScore();
+        drawBuffBalls();
 
         if (x + BALL_RADIUS > canvas.width || x - BALL_RADIUS < 0) {
           playSound("wallHit");
@@ -302,6 +340,17 @@
                 playSound("bricksHit");
                 dy = -dy;
                 b.status = 0;
+                const drop = getRandomDrop();
+                if (drop) {
+                  buffBalls.push({
+                    x: b.x + gameConfig.brick.width / 2,
+                    y: b.y,
+                    radius: 5,
+                    speed: 1,
+                    effect: drop.effect, // 掉落的特效
+                    color: drop.color, // 掉落的特效
+                  }); // 應用掉落效果
+                }
                 score++;
                 levelScore++;
                 if (levelScore === brickColumnCount * brickRowCount) {
@@ -324,6 +373,28 @@
           }
         }
       }
+
+      //掉落buff球
+      function drawBuffBalls() {
+        for (let i = 0; i < buffBalls.length; i++) {
+          const buff = buffBalls[i];
+          buff.y += buff.speed; // 以固定速度下落
+
+          // 畫出 buff 圓球
+          ctx.beginPath();
+          ctx.arc(buff.x, buff.y, buff.radius, 0, Math.PI * 2);
+          ctx.fillStyle = buff.color; // buff 圓球顏色
+          ctx.fill();
+          ctx.closePath();
+
+          // 檢查 buff 圓球是否到達底部
+          if (buff.y - buff.radius > canvas.height) {
+            buffBalls.splice(i, 1); // 刪除離開畫布的 buff 圓球
+            i--; // 調整索引
+          }
+        }
+      }
+
       // 重設磚塊
       function resetBricks() {
         for (let c = 0; c < brickColumnCount; c++) {
@@ -347,7 +418,12 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.font = "36px Arial";
         ctx.fillStyle = "#F00";
-        ctx.fillText("Level Up", 150, 200);
+        const text = "Level Up";
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillText(text, (canvas.width - textWidth) / 2, canvas.height / 2);
+        gameConfig.ball.speed += 1;
+        dx = gameConfig.ball.speed * (dx / Math.abs(dx)); // 更新 dx 和 dy 以應用新的速度
+        dy = gameConfig.ball.speed * (dy / Math.abs(dy));
       }
     </script>
     <script
