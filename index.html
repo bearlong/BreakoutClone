@@ -74,6 +74,7 @@
         wallHit: "./sounds/wallHit.mp3",
         bricksHit: "./sounds/bricksHit.mp3",
         levelUp: "./sounds/levelUp.mp3",
+        eatBuff: "./sounds/eatBuff.mp3",
       };
 
       //遊戲參數
@@ -137,12 +138,48 @@
 
       // BUFF配率表
       const dropTable = [
-        { name: "球+2", chance: 0.05, color: "red", effect: addBalls },
-        { name: "縮小", chance: 0.1, color: "blue", effect: shrinkBalls },
-        { name: "Bar加長", chance: 0.1, color: "green", effect: extendPaddle },
+        {
+          name: "球+2",
+          chance: 0.2,
+          color: "red",
+          effect: addBalls,
+          src: "./images/addBalls.svg",
+        },
+        {
+          name: "縮小",
+          chance: 0.3,
+          color: "blue",
+          effect: shrinkBalls,
+          src: "./images/shrinkBalls.svg",
+        },
+        {
+          name: "Bar加長",
+          chance: 0.4,
+          color: "green",
+          effect: extendPaddle,
+          src: "./images/extendPaddle.svg",
+        },
       ];
 
       let buffBalls = [];
+
+      const images = {};
+      const totalImages = dropTable.length;
+      let imageLoaded = false;
+      let loadedImagesCount = 0;
+      dropTable.forEach((item) => {
+        const img = new Image();
+        img.src = item.src;
+
+        // 當每個圖片加載完成時
+        img.onload = function () {
+          loadedImagesCount++;
+          if (loadedImagesCount === totalImages) {
+            imageLoaded = true; // 所有圖片都已加載完成
+          }
+        };
+        images[item.name] = img;
+      }); // 替換為圖片的路徑
 
       function getRandomDrop() {
         let rand = Math.random(); // 隨機生成一個0到1之間的數
@@ -173,8 +210,13 @@
       }
 
       btnStart.addEventListener("click", (e) => {
-        animationId = requestAnimationFrame(draw);
-        e.currentTarget.classList.add("opacity-0");
+        if (imageLoaded) {
+          // 確保圖片已載入
+          e.currentTarget.classList.add("opacity-0"); // 隱藏按鈕
+          draw(); // 開始遊戲循環
+        } else {
+          console.log("圖片尚未載入完成"); // 提示圖片還沒載入
+        }
       });
 
       let isPaused = false;
@@ -207,8 +249,6 @@
 
             // 根據反射角更新 dx 和 dy
             dx = gameConfig.ball.speed * Math.sin(angle);
-            console.log(offset);
-
             dy = -Math.abs(gameConfig.ball.speed * Math.cos(angle));
           } else if (y + gameConfig.ball.radius > canvas.height) {
             alert("GAME OVER");
@@ -343,9 +383,10 @@
                 const drop = getRandomDrop();
                 if (drop) {
                   buffBalls.push({
+                    name: drop.name,
                     x: b.x + gameConfig.brick.width / 2,
                     y: b.y,
-                    radius: 5,
+                    radius: 7,
                     speed: 1,
                     effect: drop.effect, // 掉落的特效
                     color: drop.color, // 掉落的特效
@@ -387,10 +428,33 @@
           ctx.fill();
           ctx.closePath();
 
+          const imgSize = buff.radius; // 圖片大小，可調整
+          const selectedItem = buff.name;
+          console.log(images[selectedItem]);
+          ctx.drawImage(
+            images[selectedItem],
+            buff.x - imgSize / 2,
+            buff.y - imgSize / 2,
+            imgSize,
+            imgSize
+          );
+
           // 檢查 buff 圓球是否到達底部
-          if (buff.y - buff.radius > canvas.height) {
+          if (buff.y + buff.radius > canvas.height - gameConfig.paddle.height) {
+            if (
+              buff.x > paddleX &&
+              buff.x < paddleX + gameConfig.paddle.width
+            ) {
+              console.log("test");
+              buffBalls.splice(i, 1); // 刪除離開畫布的 buff 圓球
+              i--; // 調整索引
+              console.log(buff.y);
+              playSound("eatBuff");
+              return;
+            }
             buffBalls.splice(i, 1); // 刪除離開畫布的 buff 圓球
             i--; // 調整索引
+            console.log(buff.y);
           }
         }
       }
