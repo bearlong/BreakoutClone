@@ -63,7 +63,7 @@
       let animationId;
 
       // 常量參數
-      const SPEED = 5;
+      const SPEED = 7;
       const BRICK_COLOR = "#0095DD";
       const PADDLE_WIDTH = 75;
       const PADDLE_HEIGHT = 10;
@@ -81,7 +81,7 @@
       const gameConfig = {
         // 球數值
         ball: {
-          speed: 5,
+          speed: 7,
           radius: 10,
         },
         //  BAR數值
@@ -119,20 +119,20 @@
       let levelScore = 0;
       const scoreCount = document.querySelector(".scoreCount");
       // 磚塊初始化
-      const brickColumnCount =
+      let brickColumnCount =
         Math.floor(
           800 / (gameConfig.brick.width + gameConfig.brick.padding * 2)
         ) + 1;
-      const brickRowCount =
-        Math.floor(
-          400 / 2 / (gameConfig.brick.height + gameConfig.brick.padding * 2)
-        ) + 1;
-
+      let brickRowCount = 1;
       let bricks = [];
+      let levelScoreTotal = 0;
       for (let c = 0; c < brickColumnCount; c++) {
         bricks[c] = [];
         for (let r = 0; r < brickRowCount; r++) {
           bricks[c][r] = { x: 0, y: 0, status: 1 };
+          if (bricks[c][r].status === 1) {
+            levelScoreTotal += 1;
+          }
         }
       }
 
@@ -140,21 +140,21 @@
       const dropTable = [
         {
           name: "球+2",
-          chance: 1,
+          chance: 0.55,
           color: "red",
           effect: addBalls,
           src: "./images/addBalls.svg",
         },
         {
-          name: "縮小",
-          chance: 0,
+          name: "放大",
+          chance: 0.2,
           color: "blue",
-          effect: shrinkBalls,
-          src: "./images/shrinkBalls.svg",
+          effect: bigBalls,
+          src: "./images/bigBalls.svg",
         },
         {
           name: "Bar加長",
-          chance: 0,
+          chance: 0.25,
           color: "green",
           effect: extendPaddle,
           src: "./images/extendPaddle.svg",
@@ -222,9 +222,15 @@
         });
       }
 
-      function shrinkBalls() {
-        // 邏輯：縮小球拍的寬度
-        console.log("縮小");
+      function bigBalls() {
+        gameConfig.ball.radius += 5;
+        console.log(gameConfig.ball.radius);
+        setTimeout(() => {
+          if (gameConfig.ball.radius > BALL_RADIUS) {
+            gameConfig.ball.radius -= 5;
+            console.log(gameConfig.ball.radius);
+          }
+        }, 10000);
       }
 
       function extendPaddle() {
@@ -236,7 +242,7 @@
         }
         setTimeout(() => {
           gameConfig.paddle.width -= addWidth;
-        }, 5000);
+        }, 10000);
       }
 
       btnStart.addEventListener("click", (e) => {
@@ -261,89 +267,7 @@
         drawScore();
         drawBuffBalls();
         drawBalls();
-
-        // if (x + BALL_RADIUS > canvas.width || x - BALL_RADIUS < 0) {
-        //   playSound("wallHit");
-        //   // 圓形碰到左邊或右邊
-        //   ballColor = randomColor();
-        //   dx = -dx; // 反轉 x 軸速度
-        // }
-
-        if (ballsPool.length > 0) {
-          for (let i = 0; i < ballsPool.length; i++) {
-            if (
-              ballsPool[i].x + BALL_RADIUS > canvas.width ||
-              ballsPool[i].x - BALL_RADIUS < 0
-            ) {
-              playSound("wallHit");
-              // 圓形碰到左邊或右邊
-              console.log(ballsPool[i]);
-              ballsPool[i].dx = -ballsPool[i].dx;
-            }
-          }
-        }
-
-        // if (y - BALL_RADIUS < 0) {
-        //   // 圓形碰到上邊或下邊
-        //   ballColor = randomColor();
-        //   dy = -dy; // 反轉 y 軸速度
-        // } else if (y + BALL_RADIUS + gameConfig.paddle.height > canvas.height) {
-        //   if (x > paddleX && x < paddleX + gameConfig.paddle.width) {
-        //     const offset = (x - paddleCenter) / (gameConfig.paddle.width / 2);
-        //     const angle = offset * MAX_ANGLE; // 偏移量轉成角度
-
-        //     // 根據反射角更新 dx 和 dy
-        //     dx = gameConfig.ball.speed * Math.sin(angle);
-        //     dy = -Math.abs(gameConfig.ball.speed * Math.cos(angle));
-        //   } else if (y + gameConfig.ball.radius > canvas.height) {
-        //     alert("GAME OVER");
-        //     cancelAnimationFrame(animationId);
-        //     isPaused = true;
-        //     document.location.reload();
-
-        //     // clearInterval(interval);
-        //   }
-        // }
-
-        if (ballsPool.length > 0) {
-          for (let i = 0; i < ballsPool.length; i++) {
-            if (ballsPool[i].y - BALL_RADIUS < 0) {
-              // 圓形碰到上邊或下邊
-              ballsPool[i].dy = -ballsPool[i].dy; // 反轉 y 軸速度
-            } else if (
-              ballsPool[i].y + BALL_RADIUS + gameConfig.paddle.height >
-              canvas.height
-            ) {
-              if (
-                ballsPool[i].x > paddleX &&
-                ballsPool[i].x < paddleX + gameConfig.paddle.width
-              ) {
-                const offset =
-                  (ballsPool[i].x - paddleCenter) /
-                  (gameConfig.paddle.width / 2);
-                const angle = offset * MAX_ANGLE; // 偏移量轉成角度
-
-                // 根據反射角更新 dx 和 dy
-                ballsPool[i].dx = gameConfig.ball.speed * Math.sin(angle);
-                ballsPool[i].dy = -Math.abs(
-                  gameConfig.ball.speed * Math.cos(angle)
-                );
-              } else if (
-                ballsPool[i].y + gameConfig.ball.radius >
-                canvas.height
-              ) {
-                ballsPool.splice(i, 1); // 刪除離開畫布的 buff 圓球
-                i--;
-                // clearInterval(interval);
-              }
-            }
-          }
-        } else {
-          alert("GAME OVER");
-          cancelAnimationFrame(animationId);
-          isPaused = true;
-          document.location.reload();
-        }
+        updateBalls();
 
         if (rightPressed) {
           paddleX = Math.min(
@@ -354,25 +278,61 @@
           paddleX = Math.max(paddleX - 7, 0);
         }
 
-        // x += dx;
-        // y += dy;
-
-        if (ballsPool.length > 0) {
-          for (let i = 0; i < ballsPool.length; i++) {
-            ballsPool[i].x += ballsPool[i].dx;
-            ballsPool[i].y += ballsPool[i].dy;
-          }
-        }
         animationId = requestAnimationFrame(draw);
       }
 
-      // function drawBall() {
-      //   ctx.beginPath();
-      //   ctx.arc(x, y, gameConfig.ball.radius, 0, Math.PI * 2);
-      //   ctx.fillStyle = ballColor;
-      //   ctx.fill();
-      //   ctx.closePath();
-      // }
+      function updateBalls() {
+        if (ballsPool.length <= 0) {
+          alert("GAME OVER");
+          cancelAnimationFrame(animationId);
+          isPaused = true;
+          document.location.reload();
+          return;
+        }
+
+        for (let i = 0; i < ballsPool.length; i++) {
+          ballsPool[i].x += ballsPool[i].dx;
+          ballsPool[i].y += ballsPool[i].dy;
+          if (
+            ballsPool[i].x + gameConfig.ball.radius > canvas.width ||
+            ballsPool[i].x - gameConfig.ball.radius < 0
+          ) {
+            playSound("wallHit");
+            // 圓形碰到左邊或右邊
+            ballsPool[i].dx = -ballsPool[i].dx;
+          }
+
+          if (ballsPool[i].y - gameConfig.ball.radius < 0) {
+            // 圓形碰到上邊或下邊
+            ballsPool[i].dy = -ballsPool[i].dy; // 反轉 y 軸速度
+          } else if (
+            ballsPool[i].y + gameConfig.ball.radius + gameConfig.paddle.height >
+            canvas.height
+          ) {
+            if (
+              ballsPool[i].x > paddleX &&
+              ballsPool[i].x < paddleX + gameConfig.paddle.width
+            ) {
+              const offset =
+                (ballsPool[i].x - paddleCenter) / (gameConfig.paddle.width / 2);
+              const angle = offset * MAX_ANGLE; // 偏移量轉成角度
+
+              // 根據反射角更新 dx 和 dy
+              ballsPool[i].dx = gameConfig.ball.speed * Math.sin(angle);
+              ballsPool[i].dy = -Math.abs(
+                gameConfig.ball.speed * Math.cos(angle)
+              );
+            } else if (
+              ballsPool[i].y + gameConfig.ball.radius >
+              canvas.height
+            ) {
+              ballsPool.splice(i, 1); // 刪除離開畫布的 buff 圓球
+              i--;
+              // clearInterval(interval);
+            }
+          }
+        }
+      }
 
       function drawBalls() {
         for (var i = 0; i < ballsPool.length; i++) {
@@ -444,9 +404,11 @@
       }
 
       function drawBricks() {
+        console.log(bricks);
+
         for (let c = 0; c < brickColumnCount; c++) {
           for (let r = 0; r < brickRowCount; r++) {
-            if (bricks[c][r].status === 1) {
+            if (bricks[c][r] && bricks[c][r].status === 1) {
               const brickX =
                 c * (gameConfig.brick.width + gameConfig.brick.padding) +
                 gameConfig.brick.offsetLeft;
@@ -476,7 +438,6 @@
             const b = bricks[c][r];
             if (b.status === 1) {
               for (let i = 0; i < ballsPool.length; i++) {
-                console.log(ballsPool[i]);
                 if (
                   ballsPool[i].x > b.x &&
                   ballsPool[i].x < b.x + gameConfig.brick.width &&
@@ -500,16 +461,16 @@
                   }
                   score++;
                   levelScore++;
-                  if (levelScore === brickColumnCount * brickRowCount) {
+                  if (levelScore === levelScoreTotal) {
                     cancelAnimationFrame(animationId);
                     isPaused = true;
                     levelUp();
                     initScreen();
                     playSound("levelUp");
                     levelScore = 0; // 重設關卡分數
+                    resetBricks();
 
                     setTimeout(() => {
-                      resetBricks();
                       x = canvas.width / 2;
                       y = canvas.height - 30;
                       isPaused = false;
@@ -536,7 +497,7 @@
           ctx.fill();
           ctx.closePath();
 
-          const imgSize = buff.radius; // 圖片大小，可調整
+          const imgSize = buff.radius + 2; // 圖片大小，可調整
           const selectedItem = buff.name;
           ctx.drawImage(
             images[selectedItem],
@@ -564,14 +525,47 @@
         }
       }
 
+      //讀取關卡;
+      async function loadLevels() {
+        try {
+          const response = await fetch("./levels.json");
+          if (!response.ok) throw new Error("無法載入 JSON 文件");
+          const data = await response.json();
+          if (!data.levels) throw new Error("JSON 文件缺少 levels 屬性");
+          return data.levels;
+        } catch (error) {
+          console.error("載入關卡失敗", error);
+          return []; // 返回空陣列以防止錯誤
+        }
+      }
+
       // 重設磚塊
-      function resetBricks() {
-        for (let c = 0; c < brickColumnCount; c++) {
+      async function resetBricks() {
+        bricks = [];
+        levelScoreTotal = 0;
+        const levels = await loadLevels();
+        const randomIndex = Math.floor(Math.random() * levels.length);
+        const selectedLevel = levels[randomIndex];
+        brickColumnCount = selectedLevel.length;
+        brickRowCount = selectedLevel[0].length;
+        if (!selectedLevel) {
+          console.error("無法載入關卡資料");
+          return;
+        }
+
+        for (let c = 0; c < selectedLevel.length; c++) {
           bricks[c] = [];
-          for (let r = 0; r < brickRowCount; r++) {
-            bricks[c][r] = { x: 0, y: 0, status: 1 };
+          for (let r = 0; r < selectedLevel[c].length; r++) {
+            if (selectedLevel[c][r] === 1) {
+              bricks[c][r] = { x: 0, y: 0, status: 1 }; // 設置磚塊位置和狀態
+              levelScoreTotal++; // ��加��分數
+            } else {
+              bricks[c][r] = { x: 0, y: 0, status: 0 }; // 如果沒有磚塊，設為 null
+            }
           }
         }
+        console.log(brickColumnCount);
+        console.log(brickRowCount);
       }
 
       // 音效處理
