@@ -1,0 +1,18 @@
+.on {
+  color: gold;
+}
+
+.off {
+  color: gray;
+}
+
+.goodStyle{
+  color:red;
+}
+
+.starBtn{
+  background-color: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
